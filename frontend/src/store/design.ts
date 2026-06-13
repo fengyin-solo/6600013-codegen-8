@@ -1,12 +1,24 @@
 import { create } from 'zustand'
-import type { DesignParams, PatternType } from '../types'
+import type { DesignParams, PatternType, BackgroundTexture } from '../types'
 import { THEMES } from '../themes/palettes'
+
+const DEFAULT_BG_TEXTURE: BackgroundTexture = {
+  textureType: 'none',
+  gradientType: 'none',
+  textureOpacity: 0.15,
+  gradientOpacity: 0.3,
+  gradientAngle: 135,
+  textureColor: THEMES[0].textureHint,
+  gradientColor1: THEMES[0].gradientHint[0],
+  gradientColor2: THEMES[0].gradientHint[1],
+}
 
 interface DesignStore extends DesignParams {
   svgContent: string
   setParam: <K extends keyof DesignParams>(key: K, value: DesignParams[K]) => void
   setPattern: (p: PatternType) => void
   setTheme: (id: string) => void
+  setBgTexture: (patch: Partial<BackgroundTexture>) => void
   randomSeed: () => void
   setSvgContent: (s: string) => void
   exportSvg: () => void
@@ -25,12 +37,26 @@ export const useDesignStore = create<DesignStore>((set, get) => ({
   palette: THEMES[0].colors,
   width: 800,
   height: 1000,
+  bgTexture: { ...DEFAULT_BG_TEXTURE },
   svgContent: '',
   setParam: (key, value) => set({ [key]: value } as any),
   setPattern: (p) => set({ pattern: p }),
   setTheme: (id) => {
     const theme = THEMES.find(t => t.id === id)
-    if (theme) set({ palette: theme.colors })
+    if (!theme) return
+    const current = get().bgTexture
+    set({
+      palette: theme.colors,
+      bgTexture: {
+        ...current,
+        textureColor: theme.textureHint,
+        gradientColor1: theme.gradientHint[0],
+        gradientColor2: theme.gradientHint[1],
+      },
+    })
+  },
+  setBgTexture: (patch) => {
+    set({ bgTexture: { ...get().bgTexture, ...patch } })
   },
   randomSeed: () => set({ seed: Math.floor(Math.random() * 99999) }),
   setSvgContent: (s) => set({ svgContent: s }),
